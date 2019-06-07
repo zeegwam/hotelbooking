@@ -4,16 +4,22 @@ body{
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
+    color:white;
+    font-size:20px;
     
     
 }
 h1{
-    color:rgb(87, 86, 86);
+    color:black;
     font-family: 'Kaushan Script', cursive;
     font-size:40px;
 }
 form{
-    color:black;
+    color:white;
+    font-size:20px;
+}
+div#confirmed{
+    color:red;
     font-size:20px;
 }
 

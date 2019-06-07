@@ -20,6 +20,16 @@ if (!$conn->query($sql)) {
     exit;
 }
 
+if (isset($_GET['error']) && $_GET['error'] == 'timestamp') {
+?>
+<div class='panel panel-default'>
+        <p>
+            You must select at least  1 day 
+        </p>
+</div>
+<?php
+}
+
  ?>
 <!DOCTYPE html>
 <html>
@@ -63,7 +73,7 @@ body {
       $_SESSION['hotelname']=$_POST['hotelname'];
       $_SESSION['indate']=$_POST['indate'];
       $_SESSION['outdate']=$_POST['outdate'];
-  }
+  
 //       echo "<br> Firstname:".  $_SESSION['firstname']."<br>".
 // "surname:".  $_SESSION['surname']."<br>".
 // "Check-in:". $_SESSION['indate']."<br>".
@@ -76,12 +86,17 @@ $datetime1= new DateTime($_SESSION['indate']);
 $datetime2= new DateTime($_SESSION['outdate']);
 $interval=$datetime1->diff($datetime2);
 
-$interval->format('%R%a days');
+$checkInStamp = strtotime($_SESSION['indate']);
+$checkOutStamp = strtotime($_SESSION['outdate']);
 
-$daysBooked=$interval->format('%R%d days');
-$value;
+if ($checkInStamp - $checkOutStamp > 86400 || $checkInStamp == $checkOutStamp) {
+    header("Location: ?error=timestamp");
+    exit;
+}
 
-switch(isset($_POST['hotelname'])) {
+$daysBooked=$interval->format('%d');
+
+switch(isset($_SESSION['hotelname'])) {
 
     case 'Hotel Aspen':
         $value= $daysBooked * 2649;
@@ -101,32 +116,57 @@ switch(isset($_POST['hotelname'])) {
         break;
 }
 
+$firstname = $_POST['firstname'];
+$surname = $_POST['surname'];
 
-echo "<br> Firstname:".  $_SESSION['firstname']."<br>".
-"surname:".  $_SESSION['surname']."<br>".
+$result = mysqli_query($conn,"SELECT hotelname, indate, outdate, firstname, surname FROM bookings WHERE firstname='$firstname' && surname='$surname'"); 
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {    
+ echo "<div class='feedback'> You already have a booking. <br> Firstname: ". $row['firstname'] . "<br>
+Surname: " . $row['surname'].
+"<br> Start Date: " . $row['indate'].
+"<br> End Date: " . $row['outdate'].
+"<br> Hotel Name: " . $row['hotelname'].
+"<br>" . $interval->format('%r%a days') . "<br> Total: R " . $value ."</div>";
+    } 
+}
+
+echo "<div id='element'><br> Firstname:".  $_SESSION['firstname']."<br>".
+"Surname:".  $_SESSION['surname']."<br>".
 "Check-in:". $_SESSION['indate']."<br>".
 "Check-out:". $_SESSION['outdate']."<br>".
 "Hotel Name:". $_SESSION['hotelname']."<br>".
-"Total R" . $value ."<form role='form' action=" . htmlspecialchars($_SERVER['PHP_SELF']) . " method='post'>
-<button name='confirm' type='submit'> Confirm </button></form>";
+"Total R" . $value ;'</div>';
 
+echo "<form role='form' action=" . htmlspecialchars($_SERVER['PHP_SELF']) . " method='post'>
+<button name='confirm' type='submit'> Confirm </button> </form>".'</div>';
+}
 if(isset($_POST['confirm'])){
-
-    //Preparing and binding a statement
-  
-  //prepare is method, this way we only pass the query once and then the values
-  $stmt=$conn->prepare("INSERT INTO bookings(firstname,surname,hotelname,indate,outdate) VALUES (?,?,?,?,?)");
-  //also part of preparing & binding these values to the questions marks.
-  $stmt=bind_param("sssss", $firstname,$surname,$hotelname,$indate,$outdate);
-  $firstname=$_SESSION['firstname'];
-  $surname=$_SESSION['surname'];
-  $hotelname=$_SESSION['hotelname'];
-  $indate=$_SESSION['indate'];
-  $outdate=$_SESSION['outdate'];
-  $stmt->execute();
-  echo "Booking confirmed";
-  }
+    
+    $stmt=$conn->prepare("INSERT INTO bookings(firstname,surname,hotelname,indate,outdate) VALUES (?,?,?,?,?)");
+    $stmt->bind_param('sssss', $firstname,$surname,$hotelname,$indate,$outdate);
+    $firstname=$_SESSION['firstname'];
+    $surname=$_SESSION['surname'];
+    $hotelname=$_SESSION['hotelname'];
+    $indate=$_SESSION['indate'];
+    $outdate=$_SESSION['outdate'];
+    $stmt->execute();
+    echo '<div id="confirmed">'."Booking confirmed".'</div>';
+    
+    }
   
  ?>
 </body>
 </html>
+<style>
+div#confirmed{
+    color:red;
+    font-size:20px;
+}
+
+div#element{
+    color:white;
+    font-size:20px;
+}
+    </style>
